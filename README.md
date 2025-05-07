@@ -1,22 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Running Route Overlay
+
+A web application that allows you to overlay your running route from a GPX file onto any background image. Perfect for creating custom running route visualizations!
+
+## Features
+
+- Upload GPX files to extract route data
+- Upload background images
+- Drag and resize the route overlay
+- Export the final image with the route overlay
+- Simple and intuitive interface
+- FIT file support coming soon!
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## How to Use
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Upload your GPX file using the "Upload GPS File" button
+2. Upload a background image using the "Upload Background Image" button
+3. Once both files are uploaded, you'll see your route overlaid on the background image
+4. Click and drag the route overlay to position it
+5. Use the mouse wheel to resize the route overlay
+6. Click "Export Image" to save your creation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Technical Details
+
+- Built with Next.js and TypeScript
+- Uses Tailwind CSS for styling
+- Client-side processing of GPX files
+- Canvas-based route rendering
+- No server-side processing required
+
+## Contributing
+
+Feel free to open issues or submit pull requests if you have suggestions for improvements!
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
