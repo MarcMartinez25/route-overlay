@@ -1,19 +1,14 @@
-'use client';
-
 import { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
+import { Position, Size } from './types';
 
-interface RouteOverlayProps {
-  gpsData: { lat: number; lng: number }[];
-  backgroundImage: string;
-}
-
-export default function RouteOverlay({ gpsData, backgroundImage }: RouteOverlayProps) {
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [size, setSize] = useState({ width: 300, height: 300 });
+export const useRouteOverlay = (gpsData: { lat: number; lng: number }[]) => {
+  const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
+  const [size, setSize] = useState<Size>({ width: 300, height: 300 });
   const [routeImage, setRouteImage] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [dragStart, setDragStart] = useState<Position>({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState(0.7);
   const containerRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -45,11 +40,9 @@ export default function RouteOverlay({ gpsData, backgroundImage }: RouteOverlayP
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas size
     canvas.width = 800;
     canvas.height = 600;
 
-    // Find bounds of GPS data
     const bounds = gpsData.reduce(
       (acc, point) => ({
         minLat: Math.min(acc.minLat, point.lat),
@@ -65,12 +58,22 @@ export default function RouteOverlay({ gpsData, backgroundImage }: RouteOverlayP
       }
     );
 
-    // Calculate aspect ratio of the route
+    // Add padding to the bounds to ensure the route is fully visible
+    const padding = 0.1; // 10% padding
     const routeWidth = bounds.maxLng - bounds.minLng;
     const routeHeight = bounds.maxLat - bounds.minLat;
-    const routeAspectRatio = routeWidth / routeHeight;
+    
+    // Add padding to the bounds
+    bounds.minLng -= routeWidth * padding;
+    bounds.maxLng += routeWidth * padding;
+    bounds.minLat -= routeHeight * padding;
+    bounds.maxLat += routeHeight * padding;
 
-    // Calculate canvas dimensions while maintaining aspect ratio
+    // Recalculate route dimensions with padding
+    const paddedRouteWidth = bounds.maxLng - bounds.minLng;
+    const paddedRouteHeight = bounds.maxLat - bounds.minLat;
+    const routeAspectRatio = paddedRouteWidth / paddedRouteHeight;
+
     let drawWidth = canvas.width;
     let drawHeight = canvas.height;
     if (routeAspectRatio > 1) {
@@ -79,19 +82,16 @@ export default function RouteOverlay({ gpsData, backgroundImage }: RouteOverlayP
       drawWidth = drawHeight * routeAspectRatio;
     }
 
-    // Center the drawing
     const xOffset = (canvas.width - drawWidth) / 2;
     const yOffset = (canvas.height - drawHeight) / 2;
 
-    // Scale points to canvas while maintaining aspect ratio
     const points = gpsData.map((point) => ({
-      x: xOffset + ((point.lng - bounds.minLng) / routeWidth) * drawWidth,
-      y: yOffset + ((bounds.maxLat - point.lat) / routeHeight) * drawHeight, // Invert Y coordinate
+      x: xOffset + ((point.lng - bounds.minLng) / paddedRouteWidth) * drawWidth,
+      y: yOffset + ((bounds.maxLat - point.lat) / paddedRouteHeight) * drawHeight,
     }));
 
-    // Draw route
-    ctx.strokeStyle = '#FF0000';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#fc4c02';
+    ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
     points.forEach((point) => {
@@ -143,59 +143,18 @@ export default function RouteOverlay({ gpsData, backgroundImage }: RouteOverlayP
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div
-        ref={containerRef}
-        className="relative border border-gray-200 rounded-lg overflow-hidden"
-        style={{ width: '100%', height: '500px' }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        {/* Background Image */}
-        <img
-          src={backgroundImage}
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-
-        {/* Route Overlay */}
-        {routeImage && (
-          <div
-            ref={overlayRef}
-            style={{
-              position: 'absolute',
-              left: position.x,
-              top: position.y,
-              width: size.width,
-              height: size.height,
-              cursor: isDragging ? 'grabbing' : 'grab',
-            }}
-            onMouseDown={handleMouseDown}
-          >
-            <img
-              src={routeImage}
-              alt="Route"
-              className="w-full h-full object-contain"
-              style={{ opacity: 0.7 }}
-              draggable={false}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <p className="text-sm text-gray-600">
-          Tip: Use mouse wheel to resize the route overlay, click and drag to reposition it.
-        </p>
-        <button
-          onClick={handleExport}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
-        >
-          Export Image
-        </button>
-      </div>
-    </div>
-  );
-} 
+  return {
+    position,
+    size,
+    routeImage,
+    isDragging,
+    containerRef,
+    overlayRef,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    handleExport,
+    opacity,
+    setOpacity,
+  };
+}; 

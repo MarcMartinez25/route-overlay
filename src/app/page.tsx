@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import FileUpload from '@/components/FileUpload';
-import RouteOverlay from '@/components/RouteOverlay';
+import FileUpload from '../components/FileUpload/FileUpload';
+import RouteOverlay from '../components/RouteOverlay';
 
 export default function Home() {
   const [gpsData, setGpsData] = useState<{ lat: number; lng: number }[]>([]);

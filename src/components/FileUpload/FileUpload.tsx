@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { GpsData } from './helpers';
+import { createHandlers } from './handlers';
 
 interface FileUploadProps {
-  onGpsDataReceived: (data: { lat: number; lng: number }[]) => void;
+  onGpsDataReceived: (data: GpsData[]) => void;
   onBackgroundImageReceived: (imageUrl: string) => void;
 }
 
@@ -11,68 +13,26 @@ export default function FileUpload({ onGpsDataReceived, onBackgroundImageReceive
   const [isProcessing, setIsProcessing] = useState(false);
   const [gpxFileName, setGpxFileName] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState<string | null>(null);
+  const gpsFileInputRef = useRef<HTMLInputElement>(null);
+  const imageFileInputRef = useRef<HTMLInputElement>(null);
 
-  const processGpxFile = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const xmlDoc = new DOMParser().parseFromString(e.target?.result as string, 'text/xml');
-      const trackPoints = Array.from(xmlDoc.getElementsByTagName('trkpt'));
-      
-      const gpsData = trackPoints.map(point => ({
-        lat: parseFloat(point.getAttribute('lat') || '0'),
-        lng: parseFloat(point.getAttribute('lon') || '0'),
-      })).filter(point => point.lat !== 0 && point.lng !== 0);
+  const { handleGpsFileUpload, handleImageUpload, handleClear } = createHandlers({
+    onGpsDataReceived,
+    onBackgroundImageReceived,
+    setIsProcessing,
+    setGpxFileName,
+    setImageFileName,
+  });
 
-      onGpsDataReceived(gpsData);
-      setIsProcessing(false);
-    };
-    reader.readAsText(file);
-  }, [onGpsDataReceived]);
-
-  const processFitFile = useCallback((file: File) => {
-    // For now, we'll show a message that FIT files are not supported
-    alert('FIT file support coming soon! Please use GPX files for now.');
-    setIsProcessing(false);
-  }, []);
-
-  const handleGpsFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsProcessing(true);
-    setGpxFileName(file.name);
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-
-    if (fileExtension === 'fit') {
-      processFitFile(file);
-    } else if (fileExtension === 'gpx') {
-      processGpxFile(file);
-    } else {
-      alert('Please upload a .fit or .gpx file');
-      setIsProcessing(false);
-      setGpxFileName(null);
+  const handleClearAll = () => {
+    handleClear();
+    if (gpsFileInputRef.current) {
+      gpsFileInputRef.current.value = '';
     }
-  }, [processFitFile, processGpxFile]);
-
-  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setImageFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      onBackgroundImageReceived(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  }, [onBackgroundImageReceived]);
-
-  const handleClear = useCallback(() => {
-    onGpsDataReceived([]);
-    onBackgroundImageReceived('');
-    setGpxFileName(null);
-    setImageFileName(null);
-    setIsProcessing(false);
-  }, [onGpsDataReceived, onBackgroundImageReceived]);
+    if (imageFileInputRef.current) {
+      imageFileInputRef.current.value = '';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -81,6 +41,7 @@ export default function FileUpload({ onGpsDataReceived, onBackgroundImageReceive
           Upload GPS File (.gpx)
         </label>
         <input
+          ref={gpsFileInputRef}
           type="file"
           accept=".gpx,.fit"
           onChange={handleGpsFileUpload}
@@ -107,6 +68,7 @@ export default function FileUpload({ onGpsDataReceived, onBackgroundImageReceive
           Upload Background Image
         </label>
         <input
+          ref={imageFileInputRef}
           type="file"
           accept="image/*"
           onChange={handleImageUpload}
@@ -132,7 +94,7 @@ export default function FileUpload({ onGpsDataReceived, onBackgroundImageReceive
 
       {(gpxFileName || imageFileName) && (
         <button
-          onClick={handleClear}
+          onClick={handleClearAll}
           className="w-full bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700 transition-colors"
         >
           Clear All
