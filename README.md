@@ -40,3 +40,10 @@ A web application that allows you to overlay your running route from a GPX file 
 - Client-side processing of GPX files
 - Canvas-based route rendering
 - No server-side processing required
+
+## Future Features
+
+- change color of route
+- add stats card (total time, distance, pace, hr)
+- add background blur
+- make mobile friendly
